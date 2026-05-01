@@ -1,0 +1,63 @@
+# API + Ollama. Models are pulled automatically on `docker compose up` via `ollama-pull`.
+# Override model: `OLLAMA_MODEL=my-model docker compose up --build`
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 15s
+      retries: 18
+      start_period: 30s
+
+  ollama-pull:
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    # Image ENTRYPOINT is `ollama`; must not prefix with `sh -c`
+    command: ["pull", "${OLLAMA_MODEL:-phi4-mini}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    volumes:
+      # Bind-mount so uploads + SQLite appear under ./data on your machine (named volumes hide files).
+      - ./data:/app/data
+      # Live code from host — paired with PYTHONPATH + uvicorn --reload below.
+      - ./src:/app/src
+    environment:
+      BILLS_OLLAMA_BASE_URL: http://ollama:11434
+      BILLS_OLLAMA_MODEL: ${OLLAMA_MODEL:-phi4-mini}
+      PYTHONPATH: /app/src
+    command:
+      - uvicorn
+      - bills_ocr.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /app/src
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

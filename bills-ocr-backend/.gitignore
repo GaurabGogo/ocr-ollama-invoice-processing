@@ -1,0 +1,44 @@
+# Secrets & local env (keep `.env.example` tracked)
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+
+# App data (SQLite + uploads)
+data/
+
+# Bytecode / packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.so
+
+# Lint / test / type caches
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Logs & temp
+*.log
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.swp
+*.swo
